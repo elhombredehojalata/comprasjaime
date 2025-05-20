@@ -50,8 +50,10 @@
   </div>
 
   <script>
+    // Fecha automática de hoy
     document.getElementById("fecha").valueAsDate = new Date();
 
+    // Función para agregar más campos de modelo
     function agregarModelo() {
       const container = document.getElementById("modelosContainer");
       const block = document.createElement("div");
@@ -64,12 +66,13 @@
       container.appendChild(block);
     }
 
+    // Envío del formulario
     document.getElementById("purchaseForm").addEventListener("submit", function(e) {
       e.preventDefault();
 
       const formData = new FormData(this);
 
-      fetch("https://script.google.com/macros/s/AKfycbxnPzSxuqMVJ_0DTDQvCJfoEkpTnmqfmIV6mPvPCntye1au2kxdIyn-tqBaRyMcA0b1/exec", {
+      fetch("https://script.google.com/macros/s/AKfycby_1nONOjuVvpj3IEkUEND83jE4QtGpXRNJ732ezi7uNUcGCzNZxcFSN4oIaYBKs5pM/exec", {
         method: "POST",
         body: formData
       })
@@ -89,3 +92,4 @@
   </script>
 </body>
 </html>
+
