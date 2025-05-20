@@ -17,43 +17,29 @@
       </a>
     </div>
 
-    <form id="purchaseForm" class="space-y-6">
+    <form id="purchaseForm" class="space-y-6" novalidate>
       <!-- Nombre del pedido opcional -->
       <div>
         <label class="block mb-1 font-semibold">📝 Nombre del pedido (opcional):</label>
-        <input type="text" name="nombre_pedido" class="w-full border border-gray-300 rounded p-3 text-lg"/>
+        <input type="text" name="nombre_pedido" class="w-full border border-gray-300 rounded p-3 text-lg" placeholder="Ej. Pedido Samsung A15"/>
       </div>
 
       <div>
         <label class="block mb-1 font-semibold">📅 Fecha:</label>
-        <input type="date" name="fecha" id="fecha" class="w-full border border-gray-300 rounded p-3 text-lg" required>
+        <input type="date" name="fecha" id="fecha" class="w-full border border-gray-300 rounded p-3 text-lg">
       </div>
 
       <div>
         <label class="block mb-1 font-semibold">🚚 Proveedor:</label>
-        <input type="text" name="proveedor" class="w-full border border-gray-300 rounded p-3 text-lg" required>
+        <input type="text" name="proveedor" class="w-full border border-gray-300 rounded p-3 text-lg">
       </div>
 
       <div id="modelosContainer">
         <label class="block mb-2 font-semibold">📱 Modelos comprados:</label>
-
-        <!-- Tres filas por defecto -->
         <div class="grid grid-cols-3 gap-2 mb-2">
-          <input type="number" name="cantidad[]" placeholder="Cantidad" class="border border-gray-300 rounded p-2" required>
-          <input type="text" name="modelo[]" placeholder="Modelo" class="border border-gray-300 rounded p-2" required>
-          <input type="number" name="precio[]" placeholder="Precio unitario" class="border border-gray-300 rounded p-2" required>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2 mb-2">
-          <input type="number" name="cantidad[]" placeholder="Cantidad" class="border border-gray-300 rounded p-2" required>
-          <input type="text" name="modelo[]" placeholder="Modelo" class="border border-gray-300 rounded p-2" required>
-          <input type="number" name="precio[]" placeholder="Precio unitario" class="border border-gray-300 rounded p-2" required>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2 mb-2">
-          <input type="number" name="cantidad[]" placeholder="Cantidad" class="border border-gray-300 rounded p-2" required>
-          <input type="text" name="modelo[]" placeholder="Modelo" class="border border-gray-300 rounded p-2" required>
-          <input type="number" name="precio[]" placeholder="Precio unitario" class="border border-gray-300 rounded p-2" required>
+          <input type="number" name="cantidad[]" placeholder="Cantidad" class="border border-gray-300 rounded p-2">
+          <input type="text" name="modelo[]" placeholder="Modelo" class="border border-gray-300 rounded p-2">
+          <input type="number" name="precio[]" placeholder="Precio unitario" class="border border-gray-300 rounded p-2">
         </div>
       </div>
 
@@ -61,7 +47,7 @@
 
       <div>
         <label class="block mb-1 font-semibold">💰 Monto total depositado al proveedor:</label>
-        <input type="number" name="monto" class="w-full border border-gray-300 rounded p-3 text-lg" required>
+        <input type="number" name="monto" class="w-full border border-gray-300 rounded p-3 text-lg">
       </div>
 
       <div class="text-center">
@@ -77,6 +63,7 @@
   </div>
 
   <script>
+    // Poner la fecha actual por defecto en el campo fecha
     document.getElementById("fecha").valueAsDate = new Date();
 
     function agregarModelo() {
@@ -84,33 +71,80 @@
       const block = document.createElement("div");
       block.className = "grid grid-cols-3 gap-2 mb-2";
       block.innerHTML = `
-        <input type="number" name="cantidad[]" placeholder="Cantidad" class="border border-gray-300 rounded p-2" required>
-        <input type="text" name="modelo[]" placeholder="Modelo" class="border border-gray-300 rounded p-2" required>
-        <input type="number" name="precio[]" placeholder="Precio unitario" class="border border-gray-300 rounded p-2" required>
+        <input type="number" name="cantidad[]" placeholder="Cantidad" class="border border-gray-300 rounded p-2">
+        <input type="text" name="modelo[]" placeholder="Modelo" class="border border-gray-300 rounded p-2">
+        <input type="number" name="precio[]" placeholder="Precio unitario" class="border border-gray-300 rounded p-2">
       `;
       container.appendChild(block);
     }
 
+    // Clave para guardar pedidos en localStorage (igual que pedidos.html)
+    const STORAGE_KEY = "pedidosCompraJaime";
+
+    // Función para cargar pedidos guardados
+    function cargarPedidos() {
+      const data = localStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    }
+
+    // Función para guardar pedidos
+    function guardarPedidos(pedidos) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pedidos));
+    }
+
     document.getElementById("purchaseForm").addEventListener("submit", function(e) {
       e.preventDefault();
-      const formData = new FormData(this);
 
-      fetch("https://script.google.com/macros/s/AKfycby_1nONOjuVvpj3IEkUEND83jE4QtGpXRNJ732ezi7uNUcGCzNZxcFSN4oIaYBKs5pM/exec", {
-        method: "POST",
-        body: formData
-      })
-      .then(response => {
-        if(response.ok) {
-          this.classList.add("hidden");
-          document.getElementById("successMessage").classList.remove("hidden");
-        } else {
-          alert("Hubo un error al enviar. Intenta nuevamente.");
+      const form = e.target;
+      const formData = new FormData(form);
+
+      // Extraer datos, no importa si están vacíos
+      const nombre_pedido = formData.get("nombre_pedido")?.trim() || "";
+      const fecha = formData.get("fecha") || "";
+      const proveedor = formData.get("proveedor")?.trim() || "";
+      const montoRaw = formData.get("monto");
+      const monto = montoRaw ? parseFloat(montoRaw) : 0;
+
+      // Arrays para modelos, cantidades y precios
+      const cantidades = formData.getAll("cantidad[]").map(v => v ? parseInt(v) || 0 : 0);
+      const modelos = formData.getAll("modelo[]").map(v => v?.trim() || "");
+      const precios = formData.getAll("precio[]").map(v => v ? parseFloat(v) || 0 : 0);
+
+      // Limpiar arrays para que no tengan entradas vacías en modelos (evitar registros basura)
+      const modelosFiltrados = [];
+      const cantidadesFiltradas = [];
+      const preciosFiltrados = [];
+
+      for(let i = 0; i < modelos.length; i++) {
+        if(modelos[i] !== "") {
+          modelosFiltrados.push(modelos[i]);
+          cantidadesFiltradas.push(cantidades[i] || 0);
+          preciosFiltrados.push(precios[i] || 0);
         }
-      })
-      .catch(error => {
-        console.error("Error:", error);
-        alert("Error de conexión al servidor.");
-      });
+      }
+
+      // Crear objeto pedido
+      const nuevoPedido = {
+        nombre_pedido,
+        fecha,
+        proveedor,
+        monto: monto.toFixed(2),
+        cantidad: cantidadesFiltradas,
+        modelo: modelosFiltrados,
+        precio: preciosFiltrados,
+        entregado: false
+      };
+
+      // Guardar en localStorage
+      const pedidos = cargarPedidos();
+      pedidos.push(nuevoPedido);
+      guardarPedidos(pedidos);
+
+      // Mostrar mensaje éxito y ocultar form
+      form.classList.add("hidden");
+      document.getElementById("successMessage").classList.remove("hidden");
+      form.reset();
+      document.getElementById("fecha").valueAsDate = new Date();
     });
   </script>
 </body>
