@@ -23,7 +23,6 @@
 
       <div id="modelosContainer">
         <label class="block mb-2 font-semibold">📱 Modelos comprados:</label>
-        <!-- Primer bloque de modelo -->
         <div class="grid grid-cols-3 gap-2 mb-2">
           <input type="number" name="cantidad[]" placeholder="Cantidad" class="border border-gray-300 rounded p-2" required>
           <input type="text" name="modelo[]" placeholder="Modelo" class="border border-gray-300 rounded p-2" required>
@@ -43,25 +42,16 @@
       </div>
     </form>
 
-    <!-- Mensaje de éxito -->
     <div id="successMessage" class="hidden mt-6 p-6 bg-green-100 text-green-800 text-xl rounded text-center font-semibold">
       ✅ ¡Listo Jaime! Tus compras han sido registradas. Puedes ver tu lista de compras accediendo a la opción <strong>"MIS COMPRAS"</strong>.
       <br><br>
       <a href="index.html" class="inline-block mt-4 px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700">OK</a>
     </div>
-
-    <!-- Contenedor para mostrar datos desde la hoja -->
-    <div id="listaCompras" class="mt-10 max-w-3xl mx-auto p-4 bg-white rounded shadow">
-      <h2 class="text-2xl font-bold mb-4">Lista de Compras desde Google Sheets</h2>
-      <ul id="comprasList" class="list-disc list-inside"></ul>
-    </div>
   </div>
 
   <script>
-    // Fecha automática de hoy
     document.getElementById("fecha").valueAsDate = new Date();
 
-    // Función para agregar más campos de modelo
     function agregarModelo() {
       const container = document.getElementById("modelosContainer");
       const block = document.createElement("div");
@@ -74,22 +64,19 @@
       container.appendChild(block);
     }
 
-    // Envío del formulario
     document.getElementById("purchaseForm").addEventListener("submit", function(e) {
       e.preventDefault();
 
-      const form = e.target;
-      const formData = new FormData(form);
+      const formData = new FormData(this);
 
       fetch("https://script.google.com/macros/s/AKfycbxnPzSxuqMVJ_0DTDQvCJfoEkpTnmqfmIV6mPvPCntye1au2kxdIyn-tqBaRyMcA0b1/exec", {
         method: "POST",
         body: formData
       })
       .then(response => {
-        if (response.ok) {
-          form.classList.add("hidden");
+        if(response.ok) {
+          this.classList.add("hidden");
           document.getElementById("successMessage").classList.remove("hidden");
-          cargarCompras(); // Actualiza la lista después de enviar
         } else {
           alert("Hubo un error al enviar. Intenta nuevamente.");
         }
@@ -99,39 +86,6 @@
         alert("Error de conexión al servidor.");
       });
     });
-
-    // Fetch para obtener datos desde Google Sheets (GET)
-    const urlDatos = "https://script.google.com/macros/s/AKfycbxnPzSxuqMVJ_0DTDQvCJfoEkpTnmqfmIV6mPvPCntye1au2kxdIyn-tqBaRyMcA0b1/exec";
-
-    function cargarCompras() {
-      fetch(urlDatos)
-        .then(response => {
-          if (!response.ok) throw new Error("Error en la respuesta");
-          return response.json();
-        })
-        .then(data => {
-          const lista = document.getElementById("comprasList");
-          lista.innerHTML = "";
-          if (!data || data.length === 0) {
-            lista.innerHTML = "<li>No hay compras registradas.</li>";
-            return;
-          }
-          data.forEach(item => {
-            const li = document.createElement("li");
-            li.textContent = `Fecha: ${item.fecha} | Proveedor: ${item.proveedor} | Modelo: ${item.modelo} | Cantidad: ${item.cantidad} | Precio: ${item.precio}`;
-            lista.appendChild(li);
-          });
-        })
-        .catch(error => {
-          console.error("Error cargando datos:", error);
-          const lista = document.getElementById("comprasList");
-          lista.innerHTML = "<li>Error al cargar datos. Intenta más tarde.</li>";
-        });
-    }
-
-    // Cargar los datos al abrir la página
-    window.onload = cargarCompras;
   </script>
 </body>
 </html>
-
