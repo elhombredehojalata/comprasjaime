@@ -73,9 +73,9 @@
       const formData = new FormData(this);
 
       fetch("https://script.google.com/macros/s/AKfycby_1nONOjuVvpj3IEkUEND83jE4QtGpXRNJ732ezi7uNUcGCzNZxcFSN4oIaYBKs5pM/exec", {
-        method: "POST",
-        body: formData
-      })
+  method: "POST",
+  body: formData
+})
       .then(response => {
         if(response.ok) {
           this.classList.add("hidden");
