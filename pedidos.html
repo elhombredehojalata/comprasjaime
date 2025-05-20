@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Historial de Pedidos - JAIME</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen">
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold text-center mb-8">📜 Historial de Pedidos - JAIME</h1>
+    <div id="listaPedidos" class="space-y-4"></div>
+
+    <div class="text-center mt-12">
+      <a href="index.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition">
+        ⬅️ Volver a Comprar
+      </a>
+    </div>
+  </div>
+
+  <template id="pedidoTemplate">
+    <div class="bg-white rounded-lg shadow p-4 border border-gray-300">
+      <div class="flex justify-between items-center cursor-pointer grupo-pedido-header">
+        <div>
+          <h2 class="text-xl font-semibold pedido-titulo"></h2>
+          <p class="text-gray-600 pedido-nombre"></p>
+          <p class="text-gray-600">Fecha: <span class="pedido-fecha"></span></p>
+          <p class="text-gray-600">Monto total: $<span class="pedido-monto"></span></p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <span class="entregado-label hidden bg-green-100 text-green-700 font-semibold px-3 py-1 rounded-full text-sm">ENTREGADO</span>
+          <button class="btn-toggle-detalle text-blue-600 hover:underline font-semibold">Detalles ▾</button>
+        </div>
+      </div>
+      <div class="detalle-pedido mt-4 hidden border-t border-gray-200 pt-4">
+        <table class="w-full text-left text-gray-700">
+          <thead>
+            <tr>
+              <th class="border-b border-gray-300 pb-2">Modelo</th>
+              <th class="border-b border-gray-300 pb-2">Cantidad</th>
+              <th class="border-b border-gray-300 pb-2">Precio unitario</th>
+            </tr>
+          </thead>
+          <tbody class="detalle-modelos"></tbody>
+        </table>
+
+        <div class="mt-4 flex space-x-4">
+          <button class="btn-modificar bg-yellow-400 hover:bg-yellow-500 text-white px-4 py-2 rounded font-semibold">Modificar</button>
+          <button class="btn-eliminar bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold">Eliminar</button>
+          <button class="btn-entregado bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold">Ya recibí</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    // Clave para almacenar pedidos en localStorage
+    const STORAGE_KEY = "pedidosCompraJaime";
+
+    // Cargar pedidos desde localStorage (array)
+    function cargarPedidos() {
+      const data = localStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    }
+
+    // Guardar pedidos en localStorage
+    function guardarPedidos(pedidos) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pedidos));
+    }
+
+    // Formatear fecha a formato legible dd/mm/yyyy
+    function formatearFecha(fechaStr) {
+      const d = new Date(fechaStr);
+      if (isNaN(d)) return fechaStr;
+      return d.toLocaleDateString("es-ES");
+    }
+
+    // Renderizar lista de pedidos
+    function renderizarPedidos() {
+      const pedidos = cargarPedidos();
+
+      // Ordenar por fecha descendente (más reciente primero)
+      pedidos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+      const contenedor = document.getElementById("listaPedidos");
+      contenedor.innerHTML = "";
+
+      if (pedidos.length === 0) {
+        contenedor.innerHTML = `<p class="text-center text-gray-600 text-xl mt-8">No hay pedidos registrados.</p>`;
+        return;
+      }
+
+      pedidos.forEach((pedido, i) => {
+        const template = document.getElementById("pedidoTemplate").content.cloneNode(true);
+
+        const titulo = template.querySelector(".pedido-titulo");
+        titulo.textContent = `Pedido ${i + 1}`;
+
+        const nombrePedido = template.querySelector(".pedido-nombre");
+        nombrePedido.textContent = pedido.nombre_pedido ? `Nombre: ${pedido.nombre_pedido}` : "Sin nombre de pedido";
+
+        template.querySelector(".pedido-fecha").textContent = formatearFecha(pedido.fecha);
+        template.querySelector(".pedido-monto").textContent = pedido.monto || "0";
+
+        // Mostrar etiqueta ENTREGADO si está marcado
+        if (pedido.entregado) {
+          template.querySelector(".entregado-label").classList.remove("hidden");
+          template.querySelector(".pedido-titulo").classList.add("text-green-700");
+        }
+
+        // Insertar modelos en tabla detalle
+        const tbodyModelos = template.querySelector(".detalle-modelos");
+        pedido.modelo.forEach((mod, idx) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="border-b border-gray-200 py-2">${mod}</td>
+            <td class="border-b border-gray-200 py-2">${pedido.cantidad[idx]}</td>
+            <td class="border-b border-gray-200 py-2">$${pedido.precio[idx]}</td>
+          `;
+          tbodyModelos.appendChild(tr);
+        });
+
+        // Toggle detalles
+        const btnToggle = template.querySelector(".btn-toggle-detalle");
+        const detalleDiv = template.querySelector(".detalle-pedido");
+        btnToggle.addEventListener("click", () => {
+          if (detalleDiv.classList.contains("hidden")) {
+            detalleDiv.classList.remove("hidden");
+            btnToggle.textContent = "Detalles ▴";
+          } else {
+            detalleDiv.classList.add("hidden");
+            btnToggle.textContent = "Detalles ▾";
+          }
+        });
+
+        // Botón eliminar
+        template.querySelector(".btn-eliminar").addEventListener("click", () => {
+          if (confirm(`¿Eliminar pedido ${i + 1}? Esta acción no se puede deshacer.`)) {
+            pedidos.splice(i, 1);
+            guardarPedidos(pedidos);
+            renderizarPedidos();
+          }
+        });
+
+        // Botón marcar como entregado
+        template.querySelector(".btn-entregado").addEventListener("click", () => {
+          pedidos[i].entregado = true;
+          guardarPedidos(pedidos);
+          renderizarPedidos();
+        });
+
+        // Botón modificar (simple: permite editar nombre, fecha, monto y modelos en un prompt)
+        template.querySelector(".btn-modificar").addEventListener("click", () => {
+          // Para simplificar, vamos a permitir solo modificar el nombre, fecha y monto con prompts y no los arrays
+          let nuevoNombre = prompt("Modificar nombre del pedido (vacío para borrar):", pedido.nombre_pedido || "");
+          if (nuevoNombre === null) return; // Cancelado
+          pedidos[i].nombre_pedido = nuevoNombre.trim();
+
+          let nuevaFecha = prompt("Modificar fecha (YYYY-MM-DD):", pedido.fecha);
+          if (nuevaFecha === null) return;
+          if (!/\d{4}-\d{2}-\d{2}/.test(nuevaFecha)) {
+            alert("Formato de fecha inválido. No se aplicaron cambios.");
+            return;
+          }
+          pedidos[i].fecha = nuevaFecha;
+
+          let nuevoMonto = prompt("Modificar monto total:", pedido.monto || "0");
+          if (nuevoMonto === null) return;
+          if (isNaN(parseFloat(nuevoMonto)) || parseFloat(nuevoMonto) < 0) {
+            alert("Monto inválido. No se aplicaron cambios.");
+            return;
+          }
+          pedidos[i].monto = parseFloat(nuevoMonto).toFixed(2);
+
+          guardarPedidos(pedidos);
+          renderizarPedidos();
+        });
+
+        contenedor.appendChild(template);
+      });
+    }
+
+    // Carga inicial
+    renderizarPedidos();
+  </script>
+</body>
+</html>
